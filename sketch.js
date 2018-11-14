@@ -5,6 +5,7 @@ var Pspeed;
 var colours;
 
 var a;
+var s_from_slider;
 var s;
 
 var grabbed;
@@ -18,6 +19,12 @@ var oldDi;
 
 var prevBounce;
 
+var sliderYConst;
+var hold;
+var holding;
+
+var cursorType;
+
 function approx(A,B,n){
 	if (A-n<B && A+n>B){
 		return true;
@@ -26,10 +33,12 @@ function approx(A,B,n){
 }
 
 function setup() {
+	textFont("Arial");
+	angleMode(DEGREES);
   W = window.innerWidth;
 	H = window.innerHeight;
   canvas = createCanvas(W, H);
-  relativeSpeed = 2;
+  relativeSpeed = 5;
 
   Pcoor = [W/2,H/2];
   Pspeed = [];
@@ -37,7 +46,8 @@ function setup() {
   colours = [color(136, 164, 184),color(250,252,253),color(211, 228, 240)];
 
   a = 135;
-  s = 10;
+  s_from_slider = 5;
+  s = s_from_slider+10;
 
   grabbed = false;
 
@@ -57,15 +67,26 @@ function setup() {
 	];
   mirrors = initMirrors(mirrorCoors);
   oldDi = [W,H];
-}
+  
+  sliderYConst = H-20;
+  hold = false;
+  holding = false;
+  cursorType = "default";
+ }
 
 function draw() {
-	cursor("default");
+	textAlign(CENTER,CENTER);
+	textSize(17);
+	cursorType = "default";
   hoverNode();
   background(colours[1]);
   createMirrorScene();
   pause();
   addMirror();
+	relativeSpeed = slider(relativeSpeed,30,0,"Vel");
+	s_from_slider = slider(s_from_slider,75,1,"Size");
+	s = s_from_slider+10;
+	cursor(cursorType);
 }
 
 function initMirrors(Mi){
@@ -153,7 +174,7 @@ function pause(){
     }
     
     if (mouseX<60 && mouseY<60){
-        cursor("pointer");
+        cursorType = "pointer";
     }
 }
 function addMirror(){
@@ -178,7 +199,7 @@ function addMirror(){
     vertex(W-32.5,15);
     endShape();
     if (mouseX>W-60 && mouseY<60){
-        cursor("pointer");
+        cursorType = "pointer";
     }
 }
 function createMirrorScene(){
@@ -202,14 +223,14 @@ function createMirrorScene(){
 function hoverNode(){
     for (var i=0; i<mirrors.length; i+=1){
         if (!grabbed && dist(mouseX,mouseY,mirrorCoors[i][0].X1,mirrorCoors[i][0].Y1)<7){
-            cursor("grab");
+            cursorType = "grab";
             if (mouseIsPressed){
                 grabbed = true;
                 hoverWhat = [i,1];
             }
         }
         if (!grabbed && dist(mouseX,mouseY,mirrorCoors[i][0].X2,mirrorCoors[i][0].Y2)<7){
-            cursor("grab");
+            cursorType = "grab";
             if (mouseIsPressed){
                 grabbed = true;
                 hoverWhat = [i,2];
@@ -218,7 +239,7 @@ function hoverNode(){
     }
     if (grabbed){
         PLAY = false;
-        cursor("grabbing");
+        cursorType = "grabbing";
         if (hoverWhat[1]===1){
             mirrorCoors[hoverWhat[0]][0].X1 = mouseX;
             mirrorCoors[hoverWhat[0]][0].Y1 = mouseY;
@@ -231,6 +252,49 @@ function hoverNode(){
         grabbed = false;
         mirrors = initMirrors(mirrorCoors);
     }
+}
+
+function slider(v,x,i,TXT){
+	var Ypos = -6*v+sliderYConst;
+	stroke(colours[0]);
+	fill(colours[2]);
+	triangle(x,sliderYConst-60,x-10,Ypos,x+10,Ypos);
+	triangle(x,sliderYConst,x-10,Ypos,x+10,Ypos);
+	fill(colours[1]);
+	ellipse(x,Ypos,20,20);
+	arc(x,Ypos,10,10,0,80);
+	
+	if (!holding){
+		if (dist(mouseX,mouseY,x,-6*v+sliderYConst)<10 && mouseY>sliderYConst-60 && mouseY<sliderYConst){
+			cursorType = "ns-resize";
+			if (mouseIsPressed){
+				hold = true;
+				holding = i+1;
+			}
+		} else if (dist(mouseX,mouseY,x,-6*v+sliderYConst)<10 && !hold[i]) {
+			cursorType = "ns-resize";
+		}
+	}
+	if (TXT){
+		fill(colours[0]);
+		noStroke();
+		text(TXT,x,sliderYConst-80);
+	}
+	if (!mouseIsPressed){
+		hold = false;
+		holding = false;
+	}
+	if (hold && holding === i+1){
+		cursorType = "ns-resize";
+		if (mouseY<sliderYConst-60){
+			return 10;
+		}
+		else if (mouseY>sliderYConst){
+			return 0;
+		}
+		return sliderYConst/6-mouseY/6;
+	}
+	return v;
 }
 
 function mouseReleased(){
@@ -269,5 +333,6 @@ window.onresize = function() {
   Pcoor[0] = W*(Pcoor[0]/oldDi[0]);
   Pcoor[1] = H*(Pcoor[1]/oldDi[1]);
 	oldDi = [W,H];
+	sliderYConst = H-20;
 }
 
