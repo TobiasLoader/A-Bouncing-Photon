@@ -16,11 +16,20 @@ var mirrors;
 var store;
 var oldDi;
 
+var prevBounce;
+
+function approx(A,B,n){
+	if (A-n<B && A+n>B){
+		return true;
+	}
+	return false;
+}
+
 function setup() {
   W = window.innerWidth;
 	H = window.innerHeight;
   canvas = createCanvas(W, H);
-  relativeSpeed = 5;
+  relativeSpeed = 2;
 
   Pcoor = [W/2,H/2];
   Pspeed = [];
@@ -86,29 +95,38 @@ function initMirrors(Mi){
     
     return o;
 }
-function mirror(c,c2,M,A,C){
-    if (Pcoor[0]>c2.X1 && Pcoor[0]<c2.X2 && Pcoor[1]>c2.Y1 && Pcoor[1]<c2.Y2){
-        if (c.X1 !== c.X2 && c.Y1 !== c.Y2){
-            var xShift = (s/2)*cos(atan(-1/M));
-            var yShift = (s/2)*sin(atan(-1/M));
-            var con1 = Pcoor[1] < (M*Pcoor[0])+C+(yShift-M*xShift);
-            var con2 = Pcoor[1] > (M*Pcoor[0])+C-(yShift-M*xShift);
-            if (((con1 && con2 && M<=0)||(!con1 && !con2 && M>0))) {
-                a = (2*A)-a;
-            }
-        }
-        if (c.X1 === c.X2 && Pcoor[0]>c.X1-s/2 && Pcoor[0]<c.X1+s/2){
-            a = 180-a;
-        }
-        if (c.Y1 === c.Y2 && Pcoor[1]>c.Y1-s/2 && Pcoor[1]<c.Y1+s/2){
-            a = -a;
-        }
-    }
+function mirror(c,c2,M,A,C,i){
+/*
+	  if ((approx(Pcoor[0],c.X1,s/2) && approx(Pcoor[1],c.Y1,s/2)) || (approx(Pcoor[0],c.X2,s/2) && approx(Pcoor[1],c.Y2,s/2))){
+		  a = a+180;
+		} else {
+*/
+	    if (prevBounce!==i+1 && Pcoor[0]>c2.X1-s/2 && Pcoor[0]<c2.X2+s/2 && Pcoor[1]>c2.Y1-s/2 && Pcoor[1]<c2.Y2+s/2){
+	      if (c.X1 !== c.X2 && c.Y1 !== c.Y2){
+	          var xShift = (s/2)*cos(atan(-1/M));
+	          var yShift = (s/2)*sin(atan(-1/M));
+	          var con1 = Pcoor[1] < (M*Pcoor[0])+C+(yShift-M*xShift);
+	          var con2 = Pcoor[1] > (M*Pcoor[0])+C-(yShift-M*xShift);
+	          if (((con1 && con2 && M<=0)||(!con1 && !con2 && M>0))) {
+	              a = (2*A)-a;
+	              prevBounce = i+1;
+	          }
+	      }
+	      if (c.X1 === c.X2 && Pcoor[0]>c.X1-s/2 && Pcoor[0]<c.X1+s/2){
+	          a = 180-a;
+	          prevBounce = i+1;
+	      }
+	      if (c.Y1 === c.Y2 && Pcoor[1]>c.Y1-s/2 && Pcoor[1]<c.Y1+s/2){
+	          a = -a;
+	          prevBounce = i+1
+	      }
+	    }
+// 		}
     fill(colours[1]);
     line(c.X1,c.Y1,c.X2,c.Y2);
     fill(colours[1]);
-    ellipse(c.X1,c.Y1,5,5);
-    ellipse(c.X2,c.Y2,5,5);
+    ellipse(c.X1,c.Y1,s/2,s/2);
+    ellipse(c.X2,c.Y2,s/2,s/2);
 }
 function ball(X,Y){
     fill(colours[2]);
@@ -119,6 +137,7 @@ function ball(X,Y){
     if (Pcoor[0]<0 || Pcoor[0]>width || Pcoor[1]<0 || Pcoor[1]>height){
         Pcoor = [W/2,H/2];
         a = random(0,360);
+        prevBounce = false;
     }
 }
 function pause(){
@@ -174,7 +193,7 @@ function createMirrorScene(){
     }    
     ball(Pcoor[0],Pcoor[1]);
     for (var m=0; m<mirrors.length; m+=1){
-        mirror(mirrors[m][0],mirrors[m][1],mirrors[m][2],mirrors[m][3],mirrors[m][4]);    
+        mirror(mirrors[m][0],mirrors[m][1],mirrors[m][2],mirrors[m][3],mirrors[m][4],m);    
     }
     if (false){
         println(mirrors[0][2]);    
