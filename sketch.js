@@ -18,19 +18,15 @@ var store;
 var oldDi;
 
 var prevBounce;
+var bounceCount;
+var bounceStats;
 
 var sliderYConst;
 var hold;
 var holding;
 
 var cursorType;
-
-function approx(A,B,n){
-	if (A-n<B && A+n>B){
-		return true;
-	}
-	return false;
-}
+var FPS;
 
 function setup() {
 	textFont("Arial");
@@ -59,22 +55,27 @@ function setup() {
   xtraM = [3*W/8,W/8,5*W/8,W/8];
 
   mirrorCoors = [
-    [{X1:0.2*W,Y1:0.4*H,X2:0.6*W,Y2:0.3*H},0,0,0,0],
-    [{X1:0.6*W,Y1:0.3*H,X2:0.8*W,Y2:0.5*H},0,0,0,0],
-    [{X1:0.8*W,Y1:0.5*H,X2:0.6*W,Y2:0.8*H},0,0,0,0],
-    [{X1:0.6*W,Y1:0.8*H,X2:0.1*W,Y2:0.7*H},0,0,0,0],
-    [{X1:0.1*W,Y1:0.7*H,X2:0.2*W,Y2:0.4*H},0,0,0,0],
+    [{X1:0.2*W,Y1:0.4*H,X2:0.6*W,Y2:0.31*H},0,0,0,0],
+    [{X1:0.62*W,Y1:0.3*H,X2:0.81*W,Y2:0.47*H},0,0,0,0],
+    [{X1:0.81*W,Y1:0.5*H,X2:0.62*W,Y2:0.81*H},0,0,0,0],
+    [{X1:0.6*W,Y1:0.8*H,X2:0.1*W,Y2:0.73*H},0,0,0,0],
+    [{X1:0.1*W,Y1:0.7*H,X2:0.19*W,Y2:0.43*H},0,0,0,0],
 	];
   mirrors = initMirrors(mirrorCoors);
   oldDi = [W,H];
+  
+	bounceCount = 0;
+	bounceStats = [0,0,0,0,1000000,0]; // [totalNum of tries, num of tries since last edit, total num bounces, num bounces since last edit, min, max]
   
   sliderYConst = H-20;
   hold = false;
   holding = false;
   cursorType = "default";
+  FPS = 60;
  }
 
 function draw() {
+	frameRate(FPS);
 	textAlign(CENTER,CENTER);
 	textSize(17);
 	cursorType = "default";
@@ -86,6 +87,7 @@ function draw() {
 	relativeSpeed = slider(relativeSpeed,30,0,"Vel");
 	s_from_slider = slider(s_from_slider,75,1,"Size");
 	s = s_from_slider+10;
+	bounceCountDisplay();
 	cursor(cursorType);
 }
 
@@ -122,7 +124,7 @@ function mirror(c,c2,M,A,C,i){
 		  a = a+180;
 		} else {
 */
-	    if (prevBounce!==i+1 && Pcoor[0]>c2.X1-s/2 && Pcoor[0]<c2.X2+s/2 && Pcoor[1]>c2.Y1-s/2 && Pcoor[1]<c2.Y2+s/2){
+	    if (prevBounce!==i+1 && Pcoor[0]>c2.X1 && Pcoor[0]<c2.X2 && Pcoor[1]>c2.Y1 && Pcoor[1]<c2.Y2){
 	      if (c.X1 !== c.X2 && c.Y1 !== c.Y2){
 	          var xShift = (s/2)*cos(atan(-1/M));
 	          var yShift = (s/2)*sin(atan(-1/M));
@@ -131,15 +133,18 @@ function mirror(c,c2,M,A,C,i){
 	          if (((con1 && con2 && M<=0)||(!con1 && !con2 && M>0))) {
 	              a = (2*A)-a;
 	              prevBounce = i+1;
+	              bounceCount += 1;
 	          }
 	      }
 	      if (c.X1 === c.X2 && Pcoor[0]>c.X1-s/2 && Pcoor[0]<c.X1+s/2){
 	          a = 180-a;
 	          prevBounce = i+1;
+	          bounceCount += 1;
 	      }
 	      if (c.Y1 === c.Y2 && Pcoor[1]>c.Y1-s/2 && Pcoor[1]<c.Y1+s/2){
 	          a = -a;
 	          prevBounce = i+1
+	          bounceCount += 1;
 	      }
 	    }
 // 		}
@@ -156,11 +161,32 @@ function ball(X,Y){
     ellipse(X,Y,s,s);
     
     if (Pcoor[0]<0 || Pcoor[0]>width || Pcoor[1]<0 || Pcoor[1]>height){
-        Pcoor = [W/2,H/2];
-        a = random(0,360);
-        prevBounce = false;
+      ballOut(true);
+    } else {
+	    FPS = 60;
     }
 }
+
+function ballOut(t){
+	Pcoor = [W/2,H/2];
+  a = random(0,360);
+  prevBounce = false;
+  bounceStats[0] += 1;
+  bounceStats[1] += 1;
+  bounceStats[2] += bounceCount;
+  bounceStats[3] += bounceCount;
+  if (bounceStats[4] > bounceCount){
+	  bounceStats[4] = bounceCount;
+  }
+  if (bounceStats[5] < bounceCount){
+	  bounceStats[5] = bounceCount;
+  }
+  bounceCount = 0;
+  if (t){
+  	FPS = 1;
+  }
+}
+
 function pause(){
     stroke(red(colours[0]),green(colours[0]),blue(colours[0]),200);
     fill(colours[2]);
@@ -206,7 +232,9 @@ function createMirrorScene(){
     noStroke();
     fill(150,150,150,20);
     ellipse(W/2,H/2,20,20);
-    
+    if (dist(mouseX,mouseY,W/2,H/2)<10){
+				cursorType = "pointer";
+		}
     if (PLAY){
         Pspeed = [relativeSpeed*cos(a),relativeSpeed*sin(a)];
         Pcoor[0] += Pspeed[0];
@@ -239,6 +267,8 @@ function hoverNode(){
     }
     if (grabbed){
         PLAY = false;
+        bounceStats[1] = 0;
+	      bounceStats[3] = 0;
         cursorType = "grabbing";
         if (hoverWhat[1]===1){
             mirrorCoors[hoverWhat[0]][0].X1 = mouseX;
@@ -247,13 +277,12 @@ function hoverNode(){
             mirrorCoors[hoverWhat[0]][0].X2 = mouseX;
             mirrorCoors[hoverWhat[0]][0].Y2 = mouseY;
         }
-    }
-    if (!mouseIsPressed){
-        grabbed = false;
-        mirrors = initMirrors(mirrorCoors);
+        if (!mouseIsPressed){
+        	grabbed = false;
+        	mirrors = initMirrors(mirrorCoors);
+				}
     }
 }
-
 function slider(v,x,i,TXT){
 	var Ypos = -6*v+sliderYConst;
 	stroke(colours[0]);
@@ -296,6 +325,17 @@ function slider(v,x,i,TXT){
 	}
 	return v;
 }
+function bounceCountDisplay(){
+	stroke(red(colours[0]),green(colours[0]),blue(colours[0]),200);
+  fill(colours[2]);
+  rect(W-60,H-60,63,63,2);
+  fill(colours[1]);
+  textSize(30);
+  text(bounceCount,W-30,H-30);
+  if (mouseX>W-60 && mouseY>H-60 && bounceStats[0]){
+      cursorType = "pointer";
+  }
+}
 
 function mouseReleased(){
     if (grabbed){
@@ -304,18 +344,34 @@ function mouseReleased(){
     }
 }
 function mouseClicked(){
-    if (mouseX<60 && mouseY<60){
-        if (PLAY){
-            PLAY = false;
-        } else {
-            PLAY = true;
-        }
+  if (mouseX<60 && mouseY<60){
+      if (PLAY){
+          PLAY = false;
+      } else {
+          PLAY = true;
+      }
+  }
+  if (mouseX>W-60 && mouseY<60){
+      mirrorCoors.push([{X1:xtraM[0],Y1:xtraM[1],X2:xtraM[2],Y2:xtraM[3]},0,0,0,0]);
+      // println(mirrorCoors[5]);
+      mirrors = initMirrors(mirrorCoors);
+  }
+  if (dist(mouseX,mouseY,W/2,H/2)<10){
+	  if (PLAY){
+	  	ballOut(true);
+	  }
+	  if (!PLAY) {
+		  ballOut();
+	    PLAY = true;
     }
-    if (mouseX>W-60 && mouseY<60){
-        mirrorCoors.push([{X1:xtraM[0],Y1:xtraM[1],X2:xtraM[2],Y2:xtraM[3]},0,0,0,0]);
-        // println(mirrorCoors[5]);
-        mirrors = initMirrors(mirrorCoors);
-    }
+  }
+  if (mouseX>W-60 && mouseY>H-60 && bounceStats[0]){
+	  alert("Current bounce count: " + str(bounceCount) +
+	  			"\nTotal Average since page load: " + str(round(100*bounceStats[2]/bounceStats[0])/100) + 
+	  			"\nAverage since last edit: " + str(round(100*bounceStats[3]/bounceStats[1])/100) +
+	  			"\nMinimum bounce number: " + str(bounceStats[4]) +
+	  			"\nMaximum bounce number: " + str(bounceStats[5]));
+ 	}
 }
 
 window.onresize = function() {
