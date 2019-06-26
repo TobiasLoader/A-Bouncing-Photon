@@ -97,6 +97,11 @@ function draw() {
 	s = s_from_slider+10;
 	bounceCountDisplay();
 	cursor(cursorType);
+	
+	textSize(17);
+	noStroke();
+  fill(colours[0]);
+  text("Press H for help.",W/2,H-30);
 }
 
 function borderLines(){
@@ -467,5 +472,12 @@ window.onresize = function() {
   Pcoor[1] = H*(Pcoor[1]/oldDi[1]);
 	oldDi = [W,H];
 	sliderYConst = H-20;
+}
+
+
+function keyPressed(){
+    if (keyCode === 72){
+        alert("\nThis program investigates reflection from differently angled smooth surfaces.\n\nTo start or stop the simulation, click the play/pause button in the top left of the window.\n\nTo reposition a surface, either click and drag an end (small circle) to move only that end of the surface, or click and drag between the circles to translate the entire surface.\n\nClick the + button in the top right to add a new surface. To remove a surface drag it towards the edge of the browser window until it turns red, then release it.\n\nIf the ball exits the window, data is collected and the ball will return to the center. Simulation will then be resumed after a short delay. The bottom right button displays the current number of bounces since the last respawn. The available stats can be viewed by clicking the button in the bottom right of the screen (the ball must have exited the window at least once).\n\nThe two sliders in the bottom left of the window will alter the speed and size of the ball.\n");
+    }
 }
 
